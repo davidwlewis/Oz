@@ -1,0 +1,10 @@
+package Oz
+
+opts = ""
+modules = SLT,
+          SInt, UInt,
+          Operation, Operation.Classes,
+          Interface,
+          Signal,
+          Simulation, Simulation.Utils,
+          WhiteRock
