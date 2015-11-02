@@ -16,7 +16,7 @@ import Data.Morphisms
 import Control.Category
 import Control.Arrow
 
--- Not currently used, just messing about. Highly abstract version of Circuit.
+-- Not currently used, just messing about. Arrow version of Circuit.
 data C a b = MkC (a -> (Lazy (C a b), (b)))
 
 C' : Bus i iw -> Bus o ow -> Type

@@ -46,6 +46,9 @@ inst = [
   Bit, Bit, Bit, Bit,  -- Flags
   Signed 2, Signed 2]  -- SP deltas
 
+
+--- Not working. Inlining all the buses makes it work though.
+
 decoderStage1 : Circuit decoderI (literal || inst)
 decoderStage1 = Comb $ toBundle (Pin 1) || toBundle (Pin 1)
 
