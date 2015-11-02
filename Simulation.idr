@@ -28,6 +28,7 @@ mutual
   runSignal (Mux [] def)        d = runSignal def d
   runSignal (Mux ((p,c)::xs) f) d = assert_total (if runSignal p d then runSignal c d else runSignal (Mux xs f) d)
   runSignal (Cast s {b} {ok})   d = fromBits {t=b} (rewrite sym ok in toBits $ runSignal s d)
+  runSignal (SExtend s)         d = extend (runSignal s d)
   runSignal (Coerce s)          d = (fromBits . coerce . toBits) (runSignal s d)
   runSignal (Concat a b)        d = concat (toBits $ runSignal a d) (toBits $ runSignal b d)
   runSignal (Slice s o)         d = fromBits (slice (toBits $ runSignal s d) o)

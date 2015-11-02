@@ -29,6 +29,7 @@ mutual
 
     ||| Conversions - TODO: Coerce should sign-extend for signed->signed
     Cast   : (Logic $ iSL a, Logic $ iSL b) => Signal i a -> {auto ok : (wSL a) = (wSL b)} -> Signal i b
+    SExtend : Signal i (Signed n) -> Signal i (Signed (n + m))
     Coerce : (Logic $ iSL a, Logic $ iSL b) => Signal i a -> Signal i b
 
     ||| Bitwise Combinators
