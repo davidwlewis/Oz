@@ -16,10 +16,6 @@ mutual
     Literal : iSL t -> Signal i t
     Pin : {v : Bus i iw} -> (x : Fin i) -> Signal v (index x v)
 
-    ||| Pair Indexing
-    First : {auto lc : Logic l} -> {auto rc : Logic r} -> Signal i (Pair l r) -> Signal i l
-    Second : {auto lc : Logic l} -> {auto rc : Logic r} -> Signal i (Pair l r) -> Signal i r
-
     ||| Operations
     UnOp : Uop a b -> Signal i a -> Signal i b
     BinOp : Bop a b c -> Signal i a -> Signal i b -> Signal i c
@@ -38,23 +34,34 @@ mutual
 
     ||| Arrays - Read (address, mem) Write ([enable, address, data], mem)
     Read  : {auto tc : Logic t} -> Signal i (Unsigned n) -> Signal i (Array n t) -> Signal i t
-    Write : {auto tc : Logic t} -> Bundle i [Bit, Unsigned n, t] -> Signal i (Array n t) -> Signal i (Array n t)
+    Write : {auto tc : Logic t} -> Pipeline i [Bit, Unsigned n, t] -> Signal i (Array n t) -> Signal i (Array n t)
 
-  data Bundle : Bus i iw -> Bus o ow -> Type where
-    Nil : Bundle i []
-    (::) : Signal i t -> Bundle i o -> Bundle i (t :: o)
-    (||) : Bundle i l -> Bundle i r -> Bundle i (l || r)
+  data Pipeline : Bus i iw -> Bus o ow -> Type where
+    Nil : Pipeline i []
+    (::) : Signal i t -> Pipeline i o -> Pipeline i (t :: o)
+    (||) : Pipeline i l -> Pipeline i r -> Pipeline i (l || r)
 
 data Circuit : Bus i iw -> Bus o ow -> Type where
-  Null : Circuit [] []
-  Comb : Bundle i o -> Circuit i o
+  Id : Circuit x x
+  Comb : Pipeline i o -> Circuit i o
+
   Ser : Circuit a b -> Circuit b c -> Circuit a c
   Par : Circuit a b -> Circuit c d -> Circuit (a || c) (b || d)
-  Fork : Circuit a b -> Circuit a c -> Circuit a (b||c)
+
+  Fork   : Circuit a b -> Circuit a c -> Circuit a (b || c)
+  First  : Circuit a b -> Circuit (a || c) (b || c)
+  Second : Circuit a b -> Circuit (c || a) (c || b)
+
   Pack : {b : Bus o ow} -> Circuit a b -> Circuit a [Vector ow]
   Unpack : {a : Bus i iw} -> Circuit a b -> Circuit [Vector iw] b
-  Feedback : Circuit (a || b) c -> Load b -> Bundle c b -> Circuit a c
 
+  Feedback : Circuit (a || b) c -> Load b -> Pipeline c b -> Circuit a c
+
+infixl 2 &>
+infixl 3 ||>
+
+(&>) : Circuit a b -> Circuit b c -> Circuit a c; (&>) = Ser
+(||>) : Circuit a b -> Circuit c d -> Circuit (a || c) (b || d); (||>) = Par
 
 (==) : (Ord $ iSL a, Eq $ iSL a) => Signal i a -> Signal i a -> Signal i Bit
 (==) = BinOp (Ord EQ)
@@ -76,9 +83,9 @@ data Circuit : Bus i iw -> Bus o ow -> Type where
 (<=) = BinOp (Ord LTE)
 
 total
-toBundle : (Logic $ iSL $ t) => Signal i t -> {b : Bus o (wSL t)} -> Bundle i b
-toBundle s {b} = slices s b 0 where
-  slices : (Logic $ iSL $ t) => Signal i t -> (b : Bus o ow) -> Integer -> Bundle i b
+unpackSignal : (Logic $ iSL t) => Signal i t -> {b : Bus o (wSL t)} -> Pipeline i b
+unpackSignal s {b} = slices s b 0 where
+  slices : (Logic $ iSL $ t) => Signal i t -> (b : Bus o ow) -> Integer -> Pipeline i b
   slices s [] _ = []
   slices s (x :: xs) offs =
     let offs' = offs + (cast $ wSL x)

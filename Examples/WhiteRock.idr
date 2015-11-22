@@ -15,15 +15,15 @@ import Data.Bits
 import UInt
 import SInt
 
-decoderI : Bus 4 61
-decoderI = [
+DecoderI : Bus 4 61
+DecoderI = [
   Unsigned 13,   -- PC
   Vector 16,     -- Instruction
   Unsigned 16,   -- T
   Unsigned 16 ]  -- R
 
-decoderO : Bus 11 72
-decoderO = [
+DecoderO : Bus 11 72
+DecoderO = [
   Unsigned 13,       -- New PC
   Bit, Unsigned 16,  -- New R
   Bit, Unsigned 16,  -- New N
@@ -35,11 +35,11 @@ decoderO = [
 
 
 
-literal : Bus 2 16
-literal = [Bit, Unsigned 15]
+Literal : Bus 2 16
+Literal = [Bit, Unsigned 15]
 
-inst : Bus 9 16
-inst = [
+Inst : Bus 9 16
+Inst = [
   Unsigned 3,          -- instruction type
   Bit,                 -- Flag: R -> PC
   Unsigned 4,          -- ALU Opcode
@@ -47,12 +47,10 @@ inst = [
   Signed 2, Signed 2]  -- SP deltas
 
 
---- Not working. Inlining all the buses makes it work though.
+decoderStage1 : Circuit DecoderI (Literal || Inst)
+decoderStage1 = Comb $ unpackSignal (Pin 1) || unpackSignal (Pin 1)
 
-decoderStage1 : Circuit decoderI (literal || inst)
-decoderStage1 = Comb $ toBundle (Pin 1) || toBundle (Pin 1)
-
-decoderStage2 : Circuit inst [Bit, Bit, Bit, Bit]
+decoderStage2 : Circuit Inst [Bit, Bit, Bit, Bit]
 decoderStage2 = Comb [
   Pin 0 == 0,
   Pin 0 == 2,

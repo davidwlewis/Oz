@@ -1,4 +1,4 @@
-module Oz.WhiteRock
+module Oz.Examples.Stack
 
 import Data.Fin
 import Data.Vect
@@ -15,60 +15,37 @@ import Data.Bits
 import UInt
 import SInt
 
-infixl 4 #>
-
-(#>) : Circuit a b -> Circuit b c -> Circuit a c
-(#>) = Ser
-
-SP : SLType
-SP = Unsigned 5
-
-WORD : SLType
-WORD = Unsigned 16
+SP : SLType; SP = Unsigned 5
+WORD : SLType; WORD = Unsigned 8
 
 
-||| Update the stack pointer
-sp : Circuit ([Signed 2, Bit, WORD] || [SP])        -- dSP, wEn, input || sp
-             ([SP, SP, Bit, WORD])                  -- sp, sp', wEn, input
-sp = Comb [Pin 3,
-           (Pin 3) + (Cast $ SExtend (Pin 0)),
-           Pin 1,
-           Pin 2]
-
-||| Write to array
-wr : Circuit [SP, SP, Bit, WORD]                    -- sp, sp', wEn, input
-             [SP, SP, Array 5 (WORD)]               -- sp, sp', mem
-wr = Feedback
-  (Comb [Pin 0,
-         Pin 1,
-         Write [Pin 2, Pin 1, Pin 3] (Pin 4)])
-  [Vect.replicate 32 0]
-  [Pin 2]
-
-||| Read from array
-rd : Circuit [SP, SP, Array 5 (WORD)]               -- sp, sp', mem
-             [SP, WORD]                             -- sp', output
-rd = Comb [Pin 1,
-           Read (Pin 0) (Pin 2)]
+||| The composed stack element
+||| In : wEn, input, dsp
+||| Out : output, sp'
+stack : Circuit [Bit, WORD, Signed 2] [WORD, SP]
+stack = Feedback (sp &> (First wr) &> rd) [31] [Pin 1] where
+  ||| Update the stack pointer
+  sp : Circuit ([Bit, WORD, Signed 2] || [SP]) ([Bit, WORD, SP] || [SP])
+  sp = Comb $ [Pin 0, Pin 1, (Pin 3) + (Cast $ SExtend (Pin 2))] || [Pin 3]
+  ||| Write to array
+  wr : Circuit [Bit, WORD, SP] [Array 5 (WORD), SP]
+  wr = Feedback
+    (Comb [Write [Pin 0, Pin 2, Pin 1] (Pin 3), Pin 2])
+    [Vect.replicate 32 0]
+    [Pin 0]
+  ||| Read from array
+  rd : Circuit ([Array 5 (WORD), SP] || [SP]) [WORD, SP]
+  rd = Comb [Read (Pin 2) (Pin 0), Pin 1]
 
 
-
-||| Put it all together
-stack : Circuit [Signed 2, Bit, WORD]               -- dSP, wEn, d
-                [SP, WORD]                          -- sp', output
-stack = Feedback (sp #> wr #> rd) [31] [Pin 0]
-
-
-
-
-demo : List $ Load [SP, WORD]
+demo : List $ Load [WORD, SP]
 demo = streamCircuit stack (
-  [ 1, True,  17] ::          -- Push  17
-  [ 1, True,   8] ::          -- Push   8
-  [ 1, True, 175] ::          -- Push 175
-  [ 0, False,  0] ::          -- Peek 175
-  [-1, False,  0] ::          -- Pop  175
-  [-1, False,  0] ::          -- Pop    8
-  [-1, False,  0] ::          -- Pop   17
+  [ True,  17,  1] ::          -- Push  17
+  [ True,   8,  1] ::          -- Push   8
+  [ True, 175,  1] ::          -- Push 175
+  [False,   0,  0] ::          -- Peek 175
+  [False,   0, -1] ::          -- Pop  175
+  [False,   0, -1] ::          -- Pop    8
+  [False,   0, -1] ::          -- Pop   17
    Nil
 )

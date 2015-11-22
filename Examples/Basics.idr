@@ -15,6 +15,29 @@ import Data.Bits
 import UInt
 import SInt
 
+--- The perennial half adder
+
+halfAdder : Circuit [Bit, Bit] [Bit, Bit]
+halfAdder = Comb [Pin 0 `and` Pin 1, Pin 0 `xor` Pin 1]
+
+halfAdderDemo : List $ Load [Bit, Bit]
+halfAdderDemo = streamCircuit halfAdder (
+  [False, False] ::
+  [False, True ] ::
+  [True , False] ::
+  [True , True ] ::
+  Nil
+)
+
+--- Counter
+
+counter : Circuit [] [Unsigned 8]
+counter = Feedback (Comb [Pin 0 + Literal 1]) [0] [Pin 0]
+
+counterDemo : List $ Load [Unsigned 8]
+counterDemo = streamCircuit counter (replicate 10 [])
+
+
 --- Memory element tests
 
 testWrite : Circuit ([Unsigned 3] || [Array 3 (Unsigned 8)]) [Array 3 (Unsigned 8)]
@@ -39,7 +62,7 @@ unpackTest : Load [Bit, Unsigned 4, Unsigned 3]
 unpackTest = unpack packTest
 
 sliceTest: Circuit [Vector 8] [Bit, Unsigned 4, Unsigned 3]
-sliceTest = Comb (toBundle (Pin 0))
+sliceTest = Comb (unpackSignal (Pin 0))
 
 runSliceTest : Load [Bit, Unsigned 4, Unsigned 3]
 runSliceTest = snd $ runCircuit sliceTest [packTest]
@@ -49,9 +72,9 @@ runSliceTest = snd $ runCircuit sliceTest [packTest]
 
 testShift : Circuit [] [Unsigned 16]
 testShift = Feedback
-  (Comb [shiftL (Pin 0) (Literal {t=Unsigned 16} 1)])
+  (Comb [shiftL (Pin 0) (Literal {t = Unsigned 16} 1)])
   [1]
   [(Pin 0)]
 
-demo2 : List (Load [Unsigned 16])
-demo2 = streamCircuit testShift (replicate 10 [])
+demoShift : List (Load [Unsigned 16])
+demoShift = streamCircuit testShift (replicate 10 [])

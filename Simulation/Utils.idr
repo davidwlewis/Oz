@@ -44,6 +44,7 @@ binOp (Ord GTE) = (>=)
 binOp (Ord LT)  = (<)
 binOp (Ord LTE) = (<=)
 
+
 pack : {ts : Bus n w} -> (Load ts) -> Bits w
 pack [] = intToBits 0
 pack (x::xs) = concat (toBits x) (pack xs)

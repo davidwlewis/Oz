@@ -7,4 +7,4 @@ modules = SLT,
           Interface,
           Signal,
           Simulation, Simulation.Utils,
-          Examples.WhiteRock, Examples.Basics
+          Examples.WhiteRock, Examples.Basics, Examples.Stack

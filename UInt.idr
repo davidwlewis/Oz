@@ -71,4 +71,4 @@ toFin {n=S k} (UI v) =
     else weakenN (power 2 k) f)
 
 instance Show (UInt n) where
-  show (UI v) = show v
+  show (UI v) = show (bitsToInt v)
